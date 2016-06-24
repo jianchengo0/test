@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.xu.dao.CrmDao">
+	<resultMap id="project" type="com.xu.model.Project">
+		<id column="id" property="id" jdbcType="INTEGER" />
+		<result column="code" property="code" jdbcType="VARCHAR" />
+		<result column="name" property="name" jdbcType="VARCHAR" />
+		<result column="cityCode" property="cityCode" jdbcType="VARCHAR" />
+	</resultMap>
+
+	<resultMap id="building" type="com.xu.model.Building">
+		<result column="code" property="code" jdbcType="VARCHAR" />
+		<result column="name" property="name" jdbcType="VARCHAR" />
+	</resultMap>
+
+	<resultMap id="house" type="com.xu.model.House">
+		<id column="id" property="id" jdbcType="INTEGER" />
+		<result column="code" property="code" jdbcType="VARCHAR" />
+		<result column="name" property="name" jdbcType="VARCHAR" />
+	</resultMap>
+
+	<select id="getProjectsByCityCode" parameterType="string" resultMap="project">
+		select id,code,name_formal as name ,shortName,citycode from
+		main_project p
+		where (p.isDeleted is null or p.isDeleted = 0) and p.citycode = #{citycode}
+	</select>
+
+	<select id="getBuildingsByProjectCode" parameterType="string" resultMap="building">
+		select buildingCode,buildingName from main_house h
+		where
+		(h.isDeleted is null or h.isDeleted = 0) and h.projectId = #{projectId}
+	</select>
+
+	<select id="getHousesByBuildingCode" parameterType="string" resultMap="house">
+		select id,code,name from main_house h
+		where (h.isDeleted is null or h.isDeleted = 0) and h.buildingCode = #{buildingCode}
+	</select>
+
+	<select id="getOwnerPhonesByHouseCode" parameterType="string" resultType="string">
+		select
+		left(c.mainMobile,length(c.mainMobile)-4) as phone
+		from
+		mid_customer_house m
+		join main_customer c on c.id = m.customerId
+		where
+		m.relationType = 1 and
+		(c.isDeleted = 0 or c.isDeleted is null) and
+		m.houseId = #{houseId}
+		union all
+		select
+		left(c.standbyMobile,length(c.standbyMobile)-4) as phone
+		from
+		mid_customer_house m
+		join main_customer c on c.id = m.customerId
+		where
+		m.relationType = 1 and
+		(c.isDeleted = 0 or c.isDeleted is null) and
+		m.houseId = #{houseId}
+		union all
+		select
+		left(c.homeTel,length(c.homeTel)-4) as phone
+		from
+		mid_customer_house m
+		join main_customer c on c.id = m.customerId
+		where
+		m.relationType = 1 and
+		(c.isDeleted = 0 or c.isDeleted is null) and
+		m.houseId = #{houseId}
+		union all
+		select
+		left(c.officeTel,length(c.officeTel)-4) as phone
+		from
+		mid_customer_house m
+		join main_customer c on c.id = m.customerId
+		where
+		m.relationType = 1 and
+		(c.isDeleted = 0 or c.isDeleted is null) and
+		m.houseId = #{houseId}
+	</select>
+
+	<select id="getOwnerIdByHouseCodeAndPhone" resultType="string">
+		select
+		id
+		from mid_customer_house m
+		join main_customer c on c.id = m.customerId
+		where
+		m.relationType = 1 and
+		(c.isDeleted = 0 or c.isDeleted is null)
+		and
+		m.houseId = #{houseId} and
+		(c.mainMobile = #{phone} or
+		c.standbyMobile =#{phone}  or c.homeTel = #{phone} or
+		c.officeTel = #{phone})
+	</select>
+
+	<select id="validateOwnerNameAndCerNo" resultType="boolean">
+		select
+		count(1) from main_customer c
+		where c.id =
+		#{customerId}
+		and c.fullName = #{name} and
+		c.certificateId = #{cerno}
+		limit 1
+	</select>
+
+</mapper>
